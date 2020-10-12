@@ -6,6 +6,7 @@ from vkbottle.user import User
 
 from ..database.interface import db
 from ..commands import include_commands
+from ..utils.validator import patcher
 from .handler import dp
 
 load_dotenv(encoding="utf-8")
@@ -14,6 +15,7 @@ loop = get_event_loop()
 bot = User(
     tokens=os.getenv("ACCESS_TOKENS").split(","),
     loop=loop,
+    vbml_patcher=patcher,
     debug=os.getenv("LOGGER_LEVEL")
 )
 bot.set_blueprints(dp)
