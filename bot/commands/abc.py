@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from vkbottle.user import Message
-from .enum import Sender
 
 
 class CommandException(Exception):
@@ -11,13 +10,13 @@ class Command(ABC):
     def __init__(self, *, message: Message, args: dict):
         self.message: Message = message
         self.args = args
-        self.type: Sender = self.get_type()
+        self.sender: bool = self.get_sender()
 
-    def get_type(self) -> Sender:
+    def get_sender(self) -> bool:
         if self.message.peer_id == self.message.from_id:
-            return Sender.FROM_USER
+            return True
 
-        return Sender.FROM_CHAT
+        return False
 
     async def answer(self, text: str, **kwargs) -> int:
         return await self.message(text, **kwargs)

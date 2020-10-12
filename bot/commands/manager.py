@@ -8,8 +8,8 @@ from vkbottle.utils import logger
 from vbml import Pattern, Patcher
 
 from .abc import Command, CommandException
-from .enum import Accessibility
-from bot.database.models import Commands
+from .enum import Mode
+from ..database.models import Commands
 
 
 class Manager:
@@ -28,7 +28,7 @@ class Manager:
         # Sign assets
         self.name = name
         self.description = description
-        self.type: Accessibility = Accessibility(accessibility)
+        self.type: Mode = Mode(accessibility)
 
         self.patcher: Patcher = Patcher.get_current()
         self.flag = IGNORECASE if lower else None
@@ -36,16 +36,16 @@ class Manager:
 
         self.handler: Type[Command] = handler
 
-    async def start(self, message: Message, args: dict):
+    async def process(self, message: Message, args: dict):
         command = self.handler(message=message, args=args)
 
-        if command.type.FROM_CHAT and self.type.ONLY_USER:
-            return command.answer(os.getenv("ONLY_USER"))
+        if self.type is Mode.ONLY_USER and not command.sender:
+            return os.getenv("ONLY_USER")
 
-        if command.type.FROM_USER and self.type.ONLY_CHAT:
-            return command.answer(os.getenv("ONLY_CHAT"))
+        if self.type is Mode.ONLY_CHAT and command.sender:
+            return os.getenv("ONLY_CHAT")
 
-        await command.start()
+        return await command.start()
 
     def parse_args(self, text: str) -> dict:
         for pattern in self.patterns:
@@ -66,18 +66,21 @@ class Manager:
                 continue
 
             args = command.parse_args(text)
-            if not args:
+            if args is None:
                 continue
 
             return args, command
 
 
-def register_command(**kwargs):
-    if await Commands.exists(name=kwargs.get("name")):
-        raise CommandException("Command with this name already exists!")
+async def register_command(**kwargs):
+    for command in Manager.commands:
+        if command.name == kwargs.get("name"):
+            raise CommandException("Command with this name already exists!")
 
     Manager.commands.append(Manager(**kwargs))
-    kwargs.pop("handler")
-    await Commands.create(**kwargs)
-
-    logger.info("Command {} has been registered!", kwargs.get("name"))
+    await Commands.get_or_create(
+        name=kwargs["name"],
+        description=kwargs["description"],
+        type=kwargs.get("accessibility", "all")
+    )
+    logger.info("Command «{}» has been registered!", kwargs.get("name"))
