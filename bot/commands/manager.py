@@ -18,6 +18,7 @@ class Manager:
 
     def __init__(
         self,
+        uid: int,
         name: str,
         description: str,
         handler: Type[Command],
@@ -26,6 +27,7 @@ class Manager:
         lower: bool = True
     ):
         # Sign assets
+        self.uid = uid
         self.name = name
         self.description = description
         self.type: Mode = Mode(accessibility)
@@ -60,11 +62,7 @@ class Manager:
 
     @classmethod
     def parse(cls, text: str) -> Optional[Tuple[dict, "Manager"]]:
-        lowered = text.lower()
         for command in cls.commands:
-            if not lowered.startswith(command.name.lower()):
-                continue
-
             args = command.parse_args(text)
             if args is None:
                 continue
@@ -77,10 +75,13 @@ async def register_command(**kwargs):
         if command.name == kwargs.get("name"):
             raise CommandException("Command with this name already exists!")
 
-    Manager.commands.append(Manager(**kwargs))
-    await Commands.get_or_create(
+    instance = await Commands.get_or_create(
         name=kwargs["name"],
         description=kwargs["description"],
         type=kwargs.get("accessibility", "all")
     )
-    logger.info("Command «{}» has been registered!", kwargs.get("name"))
+    Manager.commands.append(Manager(**kwargs, uid=instance[0].id))
+    logger.info(
+        "Command «{name}» with UID {uid} has been registered!",
+        name=kwargs.get("name"), uid=instance[0].id
+    )
