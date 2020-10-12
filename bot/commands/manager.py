@@ -9,7 +9,7 @@ from vbml import Pattern, Patcher
 
 from .abc import Command, CommandException
 from .enum import Accessibility
-from database.models import Commands
+from bot.database.models import Commands
 
 
 class Manager:
