@@ -1,16 +1,12 @@
 import os
-
 from re import IGNORECASE
 from typing import List, Tuple, Optional, Type
 
-from vkbottle.user import Message
-from vkbottle.utils import logger
 from vbml import Pattern, Patcher
+from vkbottle.user import Message
 
-from .abc import Command, CommandException
+from .abc import Command
 from .enum import Mode
-from ..database.models import Commands, Chat
-from ..database.interface import db
 
 
 class Manager:
@@ -79,26 +75,3 @@ class Manager:
             command.uid: command.access_code
             for command in cls.commands
         }
-
-
-async def register_command(**kwargs):
-    for command in Manager.commands:
-        if command.name == kwargs.get("name"):
-            raise CommandException("Command with this name already exists!")
-
-    save = await Commands.get_or_create(
-        name=kwargs["name"],
-        description=kwargs["description"],
-        type=kwargs.get("accessibility", "all"),
-        access_code=kwargs.get("access_code", 100)
-    )
-    if save[1]:
-        for k, v in db.accesses.items():
-            db.accesses[k].update({save[0].id: save[0].access_code})
-            await Chat.filter(id=k).update(accesses=db.accesses[k])
-
-    Manager.commands.append(Manager(**kwargs, uid=save[0].id))
-    logger.info(
-        "Command «{name}» with UID {uid} has been registered!",
-        name=kwargs.get("name"), uid=save[0].id
-    )

@@ -1,12 +1,14 @@
 import os
-from typing import Dict
+from typing import Dict, List
 
 from dotenv import load_dotenv
 from tortoise import Tortoise
 from vkbottle.utils import logger
 
-from .models import Chat, Users
+from .models import Chat, Users, Members
 from ..utils.mixin import ContextInstanceMixin
+from ..utils.vk import get_chat_data
+from ..commands.manager import Manager
 
 load_dotenv(encoding="utf-8")
 
@@ -20,6 +22,26 @@ class AsyncDB(ContextInstanceMixin):
         }
         self.accesses = dict()
         self.users = dict()
+
+    async def register_chat(self, chat_id: int):
+        data = await get_chat_data(chat_id)
+        save = await Chat.create(
+            id=chat_id, title=data[0],
+            owner_id=data[1], accesses=Manager.get_default()
+        )
+        await self.insert_users(chat_id, data[2])
+        db.accesses.update(save.load_model())
+        logger.info(
+            "Chat «{title}» with ID {id} has registered!",
+            title=data[0], id=chat_id
+        )
+
+    @staticmethod
+    async def insert_users(chat_id: int, users: List[int]):
+        await Members.bulk_create(objects=[
+            Members(user_id=user, chat_id=chat_id)
+            for user in users
+        ])
 
     async def start(self):
         try:
@@ -49,7 +71,6 @@ class AsyncDB(ContextInstanceMixin):
 
         async for user in Users.all():
             self.users.update(user.load_model())
-
 
 
 db = AsyncDB()

@@ -1,31 +1,30 @@
-from vkbottle.user import Blueprint, Message
-from vkbottle.rule import ChatActionRule
+from vkbottle.user import Message
 
-from .middlewares import Register, db
+from ..core.engine import bot
 from ..commands.manager import Manager
 from ..database.models import Members
+from ..database.interface import db
 
-dp = Blueprint(name="Handlers")
 
-
-@dp.on.chat_message(ChatActionRule("chat_invite_user"))
+@bot.on.chat_action("chat_invite_user", {"member_id": bot.user_id})
 async def on_invite(ans: Message):
-    if ans.action.member_id != dp.api.user_id:
-        return await Members.get_or_create(
-            user_id=ans.action.member_id,
-            chat_id=ans.chat_id
-        )
-
     if ans.chat_id in db.accesses:
         return
 
-    await Register().pre(ans)
-    await ans("Новый чат!")
+    await db.register_chat(ans.chat_id)
+    await ans(
+        "Настройка вашего чата успешно завершена."
+        "\nУ вас есть 12 часов на то, чтобы выдать мне "
+        "права администратора в самой беседе. После выдачи "
+        "прав рекомендую написать команду !checkadmin. Если "
+        "права администратора не будут выданы за отведенный срок, "
+        f"я покину вашу беседу.\nID: {ans.chat_id}"
+    )
 
 
-@dp.on.chat_message(ChatActionRule("chat_kick_user"))
+@bot.on.chat_action("chat_kick_user")
 async def on_kick(ans: Message):
-    if ans.action.member_id == dp.api.user_id:
+    if ans.action.member_id == bot.user_id:
         return
 
     await Members.filter(
@@ -34,8 +33,11 @@ async def on_kick(ans: Message):
     ).filter(left=True)
 
 
-@dp.on.message_handler()
+@bot.on.message_handler()
 async def wrapper(ans: Message):
+    if ans.chat_id not in db.accesses:
+        return
+
     command = Manager.parse(ans.text)
     if not command:
         return
