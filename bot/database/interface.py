@@ -1,10 +1,11 @@
 import os
-
-from vkbottle.utils import logger
-from dotenv import load_dotenv
-from tortoise import Tortoise
 from typing import Dict
 
+from dotenv import load_dotenv
+from tortoise import Tortoise
+from vkbottle.utils import logger
+
+from .models import Chat, Users
 from ..utils.mixin import ContextInstanceMixin
 
 load_dotenv(encoding="utf-8")
@@ -17,6 +18,8 @@ class AsyncDB(ContextInstanceMixin):
             "mysql": "mysql://{user}:{password}@{host}:3306/{name}",
             "postgres": "postgres://{user}:{password}@{host}:5432/{name}"
         }
+        self.accesses = dict()
+        self.users = dict()
 
     async def start(self):
         try:
@@ -37,6 +40,16 @@ class AsyncDB(ContextInstanceMixin):
             )
         except Exception as e:
             logger.exception(e)
+
+        return await self.load()
+
+    async def load(self):
+        async for i in Chat.all():
+            self.accesses.update(i.load_model())
+
+        async for user in Users.all():
+            self.users.update(user.load_model())
+
 
 
 db = AsyncDB()

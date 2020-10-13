@@ -9,7 +9,8 @@ from vbml import Pattern, Patcher
 
 from .abc import Command, CommandException
 from .enum import Mode
-from ..database.models import Commands
+from ..database.models import Commands, Chat
+from ..database.interface import db
 
 
 class Manager:
@@ -24,19 +25,22 @@ class Manager:
         handler: Type[Command],
         accessibility: str,
         patterns: List[str],
+        access_code: int = 100,
         lower: bool = True
     ):
         # Sign assets
         self.uid = uid
         self.name = name
         self.description = description
-        self.type: Mode = Mode(accessibility)
 
-        self.patcher: Patcher = Patcher.get_current()
+        self.type: Mode = Mode(accessibility)
         self.flag = IGNORECASE if lower else None
         self.patterns = self.serialize(patterns)
 
+        self.patcher: Patcher = Patcher.get_current()
         self.handler: Type[Command] = handler
+
+        self.access_code = access_code
 
     async def process(self, message: Message, args: dict):
         command = self.handler(message=message, args=args)
@@ -69,19 +73,32 @@ class Manager:
 
             return args, command
 
+    @classmethod
+    def get_default(cls) -> dict:
+        return {
+            command.uid: command.access_code
+            for command in cls.commands
+        }
+
 
 async def register_command(**kwargs):
     for command in Manager.commands:
         if command.name == kwargs.get("name"):
             raise CommandException("Command with this name already exists!")
 
-    instance = await Commands.get_or_create(
+    save = await Commands.get_or_create(
         name=kwargs["name"],
         description=kwargs["description"],
-        type=kwargs.get("accessibility", "all")
+        type=kwargs.get("accessibility", "all"),
+        access_code=kwargs.get("access_code", 100)
     )
-    Manager.commands.append(Manager(**kwargs, uid=instance[0].id))
+    if save[1]:
+        for k, v in db.accesses.items():
+            db.accesses[k].update({save[0].id: save[0].access_code})
+            await Chat.filter(id=k).update(accesses=db.accesses[k])
+
+    Manager.commands.append(Manager(**kwargs, uid=save[0].id))
     logger.info(
         "Command «{name}» with UID {uid} has been registered!",
-        name=kwargs.get("name"), uid=instance[0].id
+        name=kwargs.get("name"), uid=save[0].id
     )
