@@ -1,6 +1,13 @@
+from typing import List
 from vkbottle.user import Blueprint
 
 bp = Blueprint()
+
+
+async def get_users(ids: List[int]):
+    return await bp.api.users.get(
+        user_ids=ids
+    )
 
 
 async def get_chat_data(chat_id: int) -> tuple:

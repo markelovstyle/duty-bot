@@ -7,12 +7,13 @@ from ..database.interface import db
 
 
 @bot.on.chat_action("chat_invite_user", {"member_id": bot.user_id})
-async def on_invite(ans: Message):
-    if ans.chat_id in db.accesses:
+async def on_bot_invite(ans: Message):
+    if ans.chat_id in db.chats:
         return
 
-    await db.register_chat(ans.chat_id)
-    await ans(
+    ids = await db.chats.create(ans.chat_id)
+    await db.users.create_many(ids)
+    return (
         "Настройка вашего чата успешно завершена."
         "\nУ вас есть 12 часов на то, чтобы выдать мне "
         "права администратора в самой беседе. После выдачи "
@@ -20,6 +21,13 @@ async def on_invite(ans: Message):
         "права администратора не будут выданы за отведенный срок, "
         f"я покину вашу беседу.\nID: {ans.chat_id}"
     )
+
+
+@bot.on.chat_action("chat_invite_user")
+async def on_invite(ans: Message):
+    if ans.action.member_id == bot.user_id:
+        return
+    await db.members.create(chat_id=ans.chat_id, user_id=ans.action.member_id)
 
 
 @bot.on.chat_action("chat_kick_user")
@@ -35,9 +43,6 @@ async def on_kick(ans: Message):
 
 @bot.on.message_handler()
 async def wrapper(ans: Message):
-    if ans.chat_id not in db.accesses:
-        return
-
     command = Manager.parse(ans.text)
     if not command:
         return

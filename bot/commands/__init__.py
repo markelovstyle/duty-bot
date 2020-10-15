@@ -10,15 +10,14 @@ from vkbottle.utils import logger
 
 
 async def register_command(**kwargs):
-    for command in Manager.commands:
-        if command.name == kwargs.get("name"):
-            raise CommandException("Command with this name already exists!")
+    if any([i for i in Manager.commands if i.name == kwargs["name"]]):
+        raise CommandException("Command with this name already exists!")
 
     save = await Commands.get_or_create(
         name=kwargs["name"],
         description=kwargs["description"],
         type=kwargs.get("accessibility", "all"),
-        access_code=kwargs.get("access_code", 100)
+        access_code=kwargs.get("access_code", 5)
     )
     if save[1]:
         for k, v in db.accesses.items():

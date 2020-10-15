@@ -6,7 +6,7 @@ from vbml import Pattern, Patcher
 from vkbottle.user import Message
 
 from .abc import Command
-from .enum import Mode
+from bot.utils.enum import Mode
 
 
 class Manager:
@@ -21,7 +21,7 @@ class Manager:
         handler: Type[Command],
         accessibility: str,
         patterns: List[str],
-        access_code: int = 100,
+        access_code: int = 5,
         lower: bool = True
     ):
         # Sign assets

@@ -18,6 +18,7 @@ load_dotenv(encoding="utf-8")
 loop = get_event_loop()
 bot = User(
     tokens=os.getenv("ACCESS_TOKENS").split(","),
+    user_id=int(os.getenv("USER_ID")),
     loop=loop,
     vbml_patcher=patcher,
     debug=os.getenv("LOGGER_LEVEL")

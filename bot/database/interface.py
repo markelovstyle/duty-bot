@@ -14,6 +14,7 @@ class AsyncDB(ContextInstanceMixin):
     def __init__(self):
         self.chats = ChatDict()
         self.members = MembersDict()
+        self.users = UsersDict()
 
     async def start(self):
         try:

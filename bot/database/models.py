@@ -26,6 +26,7 @@ class Members(Model):
     id = fields.IntField(pk=True)
     user_id = fields.IntField()
     chat_id = fields.IntField()
+    rank = fields.SmallIntField(default=0)
     left = fields.BooleanField(default=False)
 
 
@@ -35,3 +36,7 @@ class Users(Model):
 
     def load_model(self) -> dict:
         return {self.id: self.name}
+
+
+class Timer(Model):
+    id = fields.IntField(pk=True)
