@@ -9,7 +9,7 @@ class Accesses(Command):
     async def start(self):
         builder = ["{uid}: {name} – ({code})".format(
             uid=command.uid, name=command.name,
-            code=db.accesses[self.message.chat_id][command.uid]
+            code=db.chats[self.message.chat_id][command.uid]
         ) for command in Manager.commands
         ]
         return "Доступы команд:\n{}".format("\n".join(builder))
