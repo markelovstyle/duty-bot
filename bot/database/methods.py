@@ -1,7 +1,7 @@
 from typing import List, NoReturn, Optional
 
 from . import ABCDict
-from .models import Chat, Members, Users
+from .models import *
 
 from ..commands.manager import Manager
 from ..utils.vk import get_chat_data, get_users
@@ -10,7 +10,8 @@ __all__ = (
     "ABCDict",
     "ChatDict",
     "MembersDict",
-    "UsersDict"
+    "UsersDict",
+    "RanksDict"
 )
 
 
@@ -43,6 +44,10 @@ class MembersDict(ABCDict):
             return data[0]
 
         await self.change(False, **kwargs)
+
+    async def get(self, **kwargs) -> int:
+        member = await Members.filter(**kwargs).get()
+        return member.rank
 
     async def delete(self, **kwargs):
         raise NotImplementedError
@@ -83,4 +88,22 @@ class UsersDict(ABCDict):
 
     async def load(self):
         async for i in Users.all():
+            self.update(i.load_model())
+
+
+class RanksDict(ABCDict):
+    async def create(self, **kwargs):
+        pass
+
+    async def delete(self, **kwargs):
+        pass
+
+    async def change(self, chat_id: int, num: int, tag: str):
+        self[chat_id][num] = tag
+        await Ranks.filter(id=chat_id).update(
+            tags=self[chat_id]
+        )
+
+    async def load(self):
+        async for i in Ranks.all():
             self.update(i.load_model())

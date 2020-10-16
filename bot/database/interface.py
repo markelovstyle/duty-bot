@@ -15,11 +15,12 @@ class AsyncDB(ContextInstanceMixin):
         self.chats = ChatDict()
         self.members = MembersDict()
         self.users = UsersDict()
+        self.ranks = RanksDict()
 
     async def start(self):
         try:
             await Tortoise.init(
-                db_url=self.get_url(),
+                db_url=self.__get_url(),
                 modules={'models': ['bot.database.models']}
             )
             await Tortoise.generate_schemas(safe=True)
@@ -30,14 +31,14 @@ class AsyncDB(ContextInstanceMixin):
         except Exception as e:
             logger.exception(e)
 
-        return await self.load()
+        return await self.__load()
 
-    async def load(self):
+    async def __load(self):
         for k in self.__dict__:
             await getattr(self, k).load()
 
     @staticmethod
-    def get_url() -> str:
+    def __get_url() -> str:
         mapping = {
             "sqlite": "sqlite://{path}",
             "mysql": "mysql://{user}:{password}@{host}:3306/{name}",

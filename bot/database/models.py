@@ -1,4 +1,13 @@
 from tortoise import fields, Model
+from ..utils.display import display_ranks
+
+__all__ = (
+    "Commands",
+    "Chat",
+    "Members",
+    "Users",
+    "Ranks"
+)
 
 
 class Commands(Model):
@@ -38,5 +47,12 @@ class Users(Model):
         return {self.id: self.name}
 
 
-class Timer(Model):
+class Ranks(Model):
     id = fields.IntField(pk=True)
+    tags = fields.JSONField(default=display_ranks)
+
+    def load_model(self) -> dict:
+        copy = self.tags.copy()
+        self.tags.clear()
+        self.tags.update({int(k): v for k, v in copy.items()})
+        return {self.id: self.tags}

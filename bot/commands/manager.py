@@ -6,7 +6,11 @@ from vbml import Pattern, Patcher
 from vkbottle.user import Message
 
 from .abc import Command
+from .inspection import Inspector
 from bot.utils.enum import Mode
+
+inspector = Inspector()
+inspector.pack()
 
 
 class Manager:
@@ -46,6 +50,10 @@ class Manager:
 
         if self.type is Mode.ONLY_CHAT and command.sender:
             return os.getenv("ONLY_CHAT")
+
+        inspect = await inspector.run(message, self.uid)
+        if type(inspect) is str:
+            return inspect
 
         return await command.start()
 
