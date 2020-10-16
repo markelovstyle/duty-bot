@@ -21,6 +21,7 @@ class Inspector:
         rank = await interface.db.members.get(user_id=user_id, chat_id=chat_id)
         if rank < interface.db.chats[chat_id][code]:
             self.queue[chat_id] = "Недостаточно прав для применения этой команды."
+            return
 
         return True
 

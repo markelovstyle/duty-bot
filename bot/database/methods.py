@@ -29,8 +29,11 @@ class ChatDict(ABCDict):
     async def delete(self, **kwargs):
         pass
 
-    async def change(self, **kwargs):
-        pass
+    async def change(self, uid: int, code: int, value: int):
+        self[uid][code] = value
+        await Chat.filter(id=uid).update(
+            accesses=self[uid]
+        )
 
     async def load(self) -> NoReturn:
         async for i in Chat.all():
